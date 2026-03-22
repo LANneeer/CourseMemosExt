@@ -6,7 +6,7 @@
   "use strict";
 
   let CONFIG = {
-    backendUrl: "http://localhost:8000",
+    backendUrl: "https://coursememos.com",
     courseSlug: "",
     targetSelectors: ["p", "h1", "h2", "h3", "li"],
     minTextLength: 20,
@@ -367,20 +367,28 @@
 
   async function askQuestion(payload) {
     const url = `${CONFIG.backendUrl}/api/courses/${CONFIG.courseSlug}/chat/`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${CONFIG.token}`,
+
+    // Route through the service worker to avoid mixed-content blocks
+    // when Coursera (HTTPS) calls a plain HTTP backend.
+    const response = await chrome.runtime.sendMessage({
+      action: "fetch",
+      url,
+      options: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${CONFIG.token}`,
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
     });
 
-    if (res.status === 401 || res.status === 403) {
-      throw new Error(`HTTP ${res.status}: unauthorized`);
+    if (response.error) throw new Error(response.error);
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`HTTP ${response.status}: unauthorized`);
     }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json(); // { answer: string }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return JSON.parse(response.text);
   }
 
   const NO_INFO_PHRASES = [

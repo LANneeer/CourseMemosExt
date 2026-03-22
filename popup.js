@@ -1,19 +1,25 @@
 // ============================================================
-// popup.js — CourseMemos AI: Login + Main screen logic
+// popup.js — CourseMemos AI: Login + No-Access + Main logic
 // ============================================================
+
+const BACKEND_URL = "https://coursememos.com";
 
 const $ = (id) => document.getElementById(id);
 
 // ---- Screens ----
+
 const screenLogin = $("screenLogin");
-const screenMain  = $("screenMain");
+const screenNoAccess = $("screenNoAccess");
+const screenMain = $("screenMain");
 
 function showScreen(name) {
   screenLogin.classList.toggle("active", name === "login");
-  screenMain.classList.toggle("active",  name === "main");
+  screenNoAccess.classList.toggle("active", name === "noAccess");
+  screenMain.classList.toggle("active", name === "main");
 }
 
 // ---- Status helpers ----
+
 function setStatus(elId, text, type = "loading") {
   const el = $(elId);
   el.className = `status-bar visible ${type}`;
@@ -27,7 +33,7 @@ function hideStatus(elId) {
 }
 
 // ---- Session storage ----
-// { baseUrl, token, email, name }
+// { token, email, name }
 
 const SESSION_KEY = "session";
 
@@ -44,30 +50,41 @@ async function clearSession() {
   await chrome.storage.local.remove(SESSION_KEY);
 }
 
-// ---- Validate token via /api/auth/me ----
+// ---- Status check ----
+// Validates token AND returns can_use_extension flag.
+// Returns { can_use_extension, email, name } or null if token is invalid.
 
-async function validateToken(session) {
+async function statusCheck(session) {
   if (!session?.token) return null;
   try {
-    const res = await fetch(`${session.baseUrl}/api/auth/me`, {
+    const res = await fetch(`${BACKEND_URL}/api/auth/status`, {
       headers: { Authorization: `Bearer ${session.token}` },
     });
-    if (res.ok) return session;
+    if (res.ok) return await res.json();
     if (res.status === 401) return null;
-    return session; // network/server error — keep session
+    // Server / network error — keep session alive, assume access granted
+    return { can_use_extension: true, email: session.email, name: session.name };
   } catch {
-    return session; // offline — keep session
+    return { can_use_extension: true, email: session.email, name: session.name };
   }
 }
 
-// ---- User bar ----
+// ---- User bars ----
 
 function showUser(session) {
-  const name  = session.name  || session.email?.split("@")[0] || "User";
+  const name = session.name || session.email?.split("@")[0] || "User";
   const email = session.email || "";
-  $("userName").textContent  = name;
+  $("userName").textContent = name;
   $("userEmail").textContent = email;
   $("userAvatar").textContent = (name[0] || "U").toUpperCase();
+}
+
+function showNoAccessUser(session) {
+  const name = session.name || session.email?.split("@")[0] || "User";
+  const email = session.email || "";
+  $("noAccessName").textContent = name;
+  $("noAccessEmail").textContent = email;
+  $("noAccessAvatar").textContent = (name[0] || "U").toUpperCase();
 }
 
 // ---- Courses ----
@@ -77,7 +94,7 @@ async function loadCourses(session) {
   sel.innerHTML = '<option value="">— Loading… —</option>';
 
   try {
-    const res = await fetch(`${session.baseUrl}/api/courses/`, {
+    const res = await fetch(`${BACKEND_URL}/api/courses/`, {
       headers: { Authorization: `Bearer ${session.token}` },
     });
 
@@ -102,7 +119,6 @@ async function loadCourses(session) {
       sel.appendChild(opt);
     }
 
-    // Restore saved selection
     chrome.storage.local.get("mainFields", ({ mainFields }) => {
       if (mainFields?.courseSlug) sel.value = mainFields.courseSlug;
     });
@@ -117,18 +133,26 @@ async function loadCourses(session) {
   const session = await getSession();
 
   if (session?.token) {
-    const valid = await validateToken(session);
-    if (valid) {
-      showUser(valid);
+    const status = await statusCheck(session);
+    if (status) {
+      const updated = { token: session.token, email: status.email || session.email, name: status.name || session.name };
+      await saveSession(updated);
+
+      if (!status.can_use_extension) {
+        showNoAccessUser(updated);
+        showScreen("noAccess");
+        return;
+      }
+
+      showUser(updated);
       loadMainFields();
-      await loadCourses(valid);
+      await loadCourses(updated);
       showScreen("main");
       return;
     }
     await clearSession();
   }
 
-  if (session?.baseUrl) $("loginUrl").value = session.baseUrl;
   showScreen("login");
 })();
 
@@ -139,15 +163,9 @@ $("btnLogin").addEventListener("click", async () => {
   btn.disabled = true;
   hideStatus("loginStatus");
 
-  const baseUrl     = $("loginUrl").value.trim().replace(/\/+$/, "");
-  const identifier  = $("loginIdentifier").value.trim();
-  const password    = $("loginPassword").value;
+  const identifier = $("loginIdentifier").value.trim();
+  const password = $("loginPassword").value;
 
-  if (!baseUrl) {
-    setStatus("loginStatus", "Enter backend URL", "error");
-    btn.disabled = false;
-    return;
-  }
   if (!identifier || !password) {
     setStatus("loginStatus", "Enter identifier and password", "error");
     btn.disabled = false;
@@ -157,7 +175,7 @@ $("btnLogin").addEventListener("click", async () => {
   setStatus("loginStatus", "Signing in…");
 
   try {
-    const res = await fetch(`${baseUrl}/api/auth/login`, {
+    const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ identifier, password }),
@@ -172,19 +190,33 @@ $("btnLogin").addEventListener("click", async () => {
 
     const data = await res.json();
     const session = {
-      baseUrl,
       token: data.access_token,
       email: data.user?.email || identifier,
-      name:  data.user?.name  || identifier,
+      name: data.user?.name || identifier,
     };
-
     await saveSession(session);
-    setStatus("loginStatus", "Success!", "success");
 
+    // Check extension permission right after login
+    const status = await statusCheck(session);
+    const updated = { ...session, email: status?.email || session.email, name: status?.name || session.name };
+    await saveSession(updated);
+
+    if (!status || !status.can_use_extension) {
+      setStatus("loginStatus", "Signed in — no extension access", "error");
+      setTimeout(() => {
+        showNoAccessUser(updated);
+        showScreen("noAccess");
+        hideStatus("loginStatus");
+      }, 600);
+      btn.disabled = false;
+      return;
+    }
+
+    setStatus("loginStatus", "Success!", "success");
     setTimeout(async () => {
-      showUser(session);
+      showUser(updated);
       loadMainFields();
-      await loadCourses(session);
+      await loadCourses(updated);
       showScreen("main");
       hideStatus("loginStatus");
     }, 400);
@@ -202,30 +234,31 @@ $("btnLogin").addEventListener("click", async () => {
   });
 });
 
-// ---- LOGOUT ----
+// ---- LOGOUT (shared logic) ----
 
-$("btnLogout").addEventListener("click", async () => {
+async function doLogout() {
   const session = await getSession();
-
   if (session?.token) {
     try {
-      await fetch(`${session.baseUrl}/api/auth/logout`, {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.token}` },
       });
     } catch { /* ignore */ }
   }
-
   await clearSession();
-  hideStatus("mainStatus");
-  $("stats").classList.remove("visible");
-
-  if (session?.baseUrl) $("loginUrl").value = session.baseUrl;
   $("loginIdentifier").value = "";
   $("loginPassword").value = "";
-
   showScreen("login");
+}
+
+$("btnLogout").addEventListener("click", async () => {
+  hideStatus("mainStatus");
+  $("stats").classList.remove("visible");
+  await doLogout();
 });
+
+$("btnLogoutNoAccess").addEventListener("click", doLogout);
 
 // ---- Main screen: persist fields ----
 
@@ -240,15 +273,13 @@ function loadMainFields() {
 
 $("selectors").addEventListener("input", () => {
   chrome.storage.local.get("mainFields", ({ mainFields }) => {
-    const saved = mainFields || {};
-    chrome.storage.local.set({ mainFields: { ...saved, selectors: $("selectors").value } });
+    chrome.storage.local.set({ mainFields: { ...(mainFields || {}), selectors: $("selectors").value } });
   });
 });
 
 $("courseSlug").addEventListener("change", () => {
   chrome.storage.local.get("mainFields", ({ mainFields }) => {
-    const saved = mainFields || {};
-    chrome.storage.local.set({ mainFields: { ...saved, courseSlug: $("courseSlug").value } });
+    chrome.storage.local.set({ mainFields: { ...(mainFields || {}), courseSlug: $("courseSlug").value } });
   });
 });
 
@@ -257,8 +288,8 @@ $("courseSlug").addEventListener("change", () => {
 function showStats(s) {
   $("stats").classList.add("visible");
   $("nAns").textContent = s.answered || 0;
-  $("nUnk").textContent = s.unknown  || 0;
-  $("nErr").textContent = s.error    || 0;
+  $("nUnk").textContent = s.unknown || 0;
+  $("nErr").textContent = s.error || 0;
 }
 
 async function getTab() {
@@ -286,11 +317,17 @@ $("btnAnalyze").addEventListener("click", async () => {
     return;
   }
 
-  session = await validateToken(session);
-  if (!session) {
+  const status = await statusCheck(session);
+  if (!status) {
     await clearSession();
     setStatus("mainStatus", "Session expired. Please sign in again.", "error");
     setTimeout(() => showScreen("login"), 1500);
+    btn.disabled = false;
+    return;
+  }
+  if (!status.can_use_extension) {
+    showNoAccessUser(session);
+    showScreen("noAccess");
     btn.disabled = false;
     return;
   }
@@ -305,7 +342,7 @@ $("btnAnalyze").addEventListener("click", async () => {
   const selectors = $("selectors").value.split(",").map((s) => s.trim()).filter(Boolean);
 
   const config = {
-    backendUrl: session.baseUrl,
+    backendUrl: BACKEND_URL,
     courseSlug,
     targetSelectors: selectors.length ? selectors : MAIN_DEFAULTS.selectors.split(", "),
     maxElements: 5,
@@ -342,7 +379,7 @@ $("btnAnalyze").addEventListener("click", async () => {
 // ---- RESET ----
 
 $("btnReset").addEventListener("click", async () => {
-  try { await sendToContent("reset"); } catch {}
+  try { await sendToContent("reset"); } catch { }
   hideStatus("mainStatus");
   $("stats").classList.remove("visible");
 });

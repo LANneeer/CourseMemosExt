@@ -236,14 +236,6 @@
     </div>
 
     <div class="section">
-      <div class="section-label">Server</div>
-      <div class="field">
-        <input type="text" id="loginUrl" placeholder="http://localhost:8000">
-        <div class="field-hint">Backend base URL (no trailing slash)</div>
-      </div>
-    </div>
-
-    <div class="section">
       <div class="section-label">Credentials</div>
       <div class="field">
         <input type="text" id="loginIdentifier" placeholder="email or username" autocomplete="username">
@@ -257,6 +249,34 @@
 
     <div class="actions">
       <button class="btn-primary" id="btnLogin">Sign In</button>
+    </div>
+
+    <div class="footer">COURSEMEMOS AI v1.0</div>
+  </div>
+
+  <!-- ==================== NO ACCESS SCREEN ==================== -->
+  <div class="screen" id="screenNoAccess">
+    <div class="login-hero">
+      <div class="login-logo">🔒</div>
+      <h2>Access Denied</h2>
+      <p>Your account has no permission to use this extension</p>
+    </div>
+
+    <div class="user-bar">
+      <div class="user-bar-left">
+        <div class="user-avatar" id="noAccessAvatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="noAccessName">User</div>
+          <div class="user-email" id="noAccessEmail"></div>
+        </div>
+      </div>
+      <button class="btn-signout" id="btnLogoutNoAccess">Sign Out</button>
+    </div>
+
+    <div class="section">
+      <p style="font-size:11.5px;color:#3e4150;line-height:1.6;padding-bottom:4px;">
+        Contact your administrator to enable extension access for your account.
+      </p>
     </div>
 
     <div class="footer">COURSEMEMOS AI v1.0</div>
