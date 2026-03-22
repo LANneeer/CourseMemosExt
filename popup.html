@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 360px;
+      font-family: 'DM Sans', sans-serif;
+      background: #0c0c14;
+      color: #c8cad0;
+      overflow: hidden;
+    }
+
+    /* ---- Screen toggling ---- */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ---- Header ---- */
+    .header {
+      padding: 20px 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6d5bfa, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+
+    .header h1 { font-size: 15px; font-weight: 700; color: #eef0f4; letter-spacing: -0.3px; }
+    .header p   { font-size: 11px; color: #5a5d6a; margin-top: 1px; }
+
+    /* ---- Login header ---- */
+    .login-hero {
+      text-align: center;
+      padding: 28px 20px 0;
+    }
+
+    .login-logo {
+      display: inline-flex;
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #6d5bfa, #3b82f6);
+      align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 10px;
+    }
+
+    .login-hero h2 { font-size: 17px; font-weight: 700; color: #eef0f4; }
+    .login-hero p   { font-size: 11.5px; color: #5a5d6a; margin-top: 3px; }
+
+    /* ---- Sections ---- */
+    .section { padding: 16px 20px 0; }
+
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #3e4150;
+      margin-bottom: 8px;
+    }
+
+    /* ---- Inputs & selects ---- */
+    .field { margin-bottom: 10px; }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 9px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      background: #15151f;
+      border: 1px solid #1f2030;
+      border-radius: 8px;
+      color: #c8cad0;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus,
+    .field select:focus { border-color: #6d5bfa; }
+
+    .field input::placeholder { color: #2e3040; }
+
+    .field select { cursor: pointer; appearance: none; }
+    .field select option { background: #15151f; }
+
+    .field-hint {
+      font-size: 10px; color: #3e4150;
+      margin-top: 3px; padding-left: 2px;
+    }
+
+    /* ---- Buttons ---- */
+    .actions { padding: 14px 20px 0; display: flex; gap: 8px; }
+
+    button {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 600;
+      border: none; border-radius: 8px;
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .btn-primary {
+      flex: 1; padding: 11px 0;
+      background: linear-gradient(135deg, #6d5bfa, #5046d4);
+      color: #fff; letter-spacing: 0.2px;
+    }
+    .btn-primary:hover { filter: brightness(1.12); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled {
+      background: #1a1a28; color: #3e4150;
+      cursor: wait; transform: none; filter: none;
+    }
+
+    .btn-ghost {
+      padding: 11px 16px; background: transparent;
+      color: #5a5d6a; border: 1px solid #1f2030;
+    }
+    .btn-ghost:hover { background: #15151f; color: #c8cad0; }
+
+    .btn-signout {
+      padding: 6px 12px; background: transparent;
+      color: #5a5d6a; border: 1px solid #1f2030;
+      font-size: 11px;
+    }
+    .btn-signout:hover { background: #1d0f0f; color: #ef4444; border-color: #2a1018; }
+
+    /* ---- Status bars ---- */
+    .status-bar {
+      margin: 14px 20px 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-bar.visible { display: flex; }
+    .status-bar.loading  { background: #15151f; color: #6d5bfa; }
+    .status-bar.success  { background: #0f1d15; color: #22c55e; }
+    .status-bar.error    { background: #1d0f0f; color: #ef4444; }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid #6d5bfa;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- User bar ---- */
+    .user-bar {
+      margin: 14px 20px 0;
+      padding: 10px 12px;
+      background: #15151f;
+      border-radius: 8px;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 8px;
+    }
+
+    .user-bar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+    .user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6d5bfa, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff;
+      flex-shrink: 0; text-transform: uppercase;
+    }
+
+    .user-info { min-width: 0; }
+
+    .user-name {
+      font-size: 12px; font-weight: 600; color: #eef0f4;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .user-email {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px; color: #3e4150;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ---- Stats ---- */
+    .stats {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px; padding: 14px 20px;
+    }
+    .stats.visible { display: grid; }
+
+    .stat { background: #15151f; border-radius: 8px; padding: 10px 0; text-align: center; }
+
+    .stat-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px; font-weight: 700; line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 9px; text-transform: uppercase;
+      letter-spacing: 0.8px; color: #3e4150; margin-top: 4px;
+    }
+
+    .c-ans { color: #22c55e; }
+    .c-unk { color: #94a3b8; }
+    .c-err { color: #f59e0b; }
+
+    /* ---- Footer ---- */
+    .footer {
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; color: #1f2030;
+      padding: 10px 0 16px; letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div class="screen" id="screenLogin">
+    <div class="login-hero">
+      <div class="login-logo">🎓</div>
+      <h2>CourseMemos AI</h2>
+      <p>Sign in to analyse page content with your courses</p>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Server</div>
+      <div class="field">
+        <input type="text" id="loginUrl" placeholder="http://localhost:8000">
+        <div class="field-hint">Backend base URL (no trailing slash)</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Credentials</div>
+      <div class="field">
+        <input type="text" id="loginIdentifier" placeholder="email or username" autocomplete="username">
+      </div>
+      <div class="field">
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+      </div>
+    </div>
+
+    <div class="status-bar" id="loginStatus"></div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnLogin">Sign In</button>
+    </div>
+
+    <div class="footer">COURSEMEMOS AI v1.0</div>
+  </div>
+
+  <!-- ==================== MAIN SCREEN ==================== -->
+  <div class="screen" id="screenMain">
+    <div class="header">
+      <div class="header-icon">🎓</div>
+      <div>
+        <h1>CourseMemos AI</h1>
+        <p>Select course · Scan · Ask · Annotate</p>
+      </div>
+    </div>
+
+    <div class="user-bar">
+      <div class="user-bar-left">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="userName">User</div>
+          <div class="user-email" id="userEmail">user@example.com</div>
+        </div>
+      </div>
+      <button class="btn-signout" id="btnLogout">Sign Out</button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Course</div>
+      <div class="field">
+        <select id="courseSlug">
+          <option value="">— Loading courses… —</option>
+        </select>
+        <div class="field-hint">Course to query for AI answers</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Configuration</div>
+      <div class="field">
+        <input type="text" id="selectors" placeholder="p, h1, h2, h3, li">
+        <div class="field-hint">CSS selectors (up to 5 elements analysed)</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnAnalyze">Ask CourseMemos AI</button>
+      <button class="btn-ghost" id="btnReset">Clear</button>
+    </div>
+
+    <div class="status-bar" id="mainStatus"></div>
+
+    <div class="stats" id="stats">
+      <div class="stat"><div class="stat-num c-ans" id="nAns">0</div><div class="stat-label">Answered</div></div>
+      <div class="stat"><div class="stat-num c-unk" id="nUnk">0</div><div class="stat-label">No Info</div></div>
+      <div class="stat"><div class="stat-num c-err" id="nErr">0</div><div class="stat-label">Errors</div></div>
+    </div>
+
+    <div class="footer">COURSEMEMOS AI v1.0</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

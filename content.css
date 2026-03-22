@@ -1,0 +1,179 @@
+/* content.css — CourseMemos AI element annotations */
+
+@keyframes cm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+[data-cm-id] {
+  transition: outline-color 0.3s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.cm-processing {
+  outline: 2px dashed #94a3b8 !important;
+  outline-offset: 2px;
+  animation: cm-pulse 1.2s ease-in-out infinite;
+}
+
+.cm-answered {
+  outline: 2px solid #22c55e !important;
+  outline-offset: 2px;
+  background-color: rgba(34, 197, 94, 0.07) !important;
+}
+
+.cm-unknown {
+  outline: 2px solid #94a3b8 !important;
+  outline-offset: 2px;
+  background-color: rgba(148, 163, 184, 0.05) !important;
+}
+
+.cm-error {
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 2px;
+  background-color: rgba(245, 158, 11, 0.07) !important;
+}
+
+.cm-badge {
+  display: inline;
+  font-size: 13px;
+  margin-right: 4px;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ---- Correct answer text ---- */
+
+.cm-answer-text {
+  color: #22c55e !important;
+}
+
+/* ---- Correct option container (legacy, kept for clearResults compat) ---- */
+
+.cm-correct-option {
+  position: relative;
+}
+
+.cm-correct-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  width: 20px;
+  height: 20px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 50%;
+  vertical-align: middle;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.cm-fail-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 50%;
+  vertical-align: middle;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* ---- Floating answer panel ---- */
+
+#cm-answer-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 360px;
+  max-height: 480px;
+  background: #0c0c14;
+  border: 1px solid #2a2a3c;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  color: #c8cad0;
+  z-index: 2147483647;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#cm-answer-panel.cm-panel-visible {
+  display: flex;
+}
+
+.cm-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #15151f;
+  border-bottom: 1px solid #1f2030;
+  flex-shrink: 0;
+}
+
+.cm-panel-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #eef0f4;
+  letter-spacing: -0.2px;
+}
+
+.cm-panel-close {
+  background: transparent;
+  border: none;
+  color: #5a5d6a;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.cm-panel-close:hover { color: #c8cad0; }
+
+.cm-panel-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.cm-panel-question {
+  font-size: 11px;
+  color: #5a5d6a;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.cm-panel-answer {
+  font-size: 13px;
+  color: #c8cad0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.cm-panel-sources {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #1f2030;
+  font-size: 10px;
+  color: #3e4150;
+  line-height: 1.5;
+}
